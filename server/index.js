@@ -481,8 +481,10 @@ app.post('/find-customer-by-email', async (req, res) => {
 });
 
 // Start server with error handling
-const server = app.listen(port, () => {
+const server = app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
+  console.log('Environment:', process.env.NODE_ENV || 'development');
+  console.log('Render deployment ready!');
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`Port ${port} is already in use. Please try a different port or kill the process using this port.`);
