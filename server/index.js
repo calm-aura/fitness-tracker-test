@@ -195,6 +195,17 @@ app.get('/check-subscription/:customerId', async (req, res) => {
     const { customerId } = req.params;
     console.log('🔍 [LEGACY] Checking subscription for customer:', customerId);
 
+    // Validate customer ID format - Stripe customer IDs start with 'cus_'
+    if (!customerId.startsWith('cus_')) {
+      console.log('❌ [LEGACY] Invalid customer ID format (probably user ID):', customerId);
+      console.log('🔧 [LEGACY] This looks like a user ID instead of a customer ID - clearing data');
+      return res.json({ 
+        isSubscribed: false, 
+        clearData: true,
+        error: 'Invalid customer ID format'
+      });
+    }
+
     // First verify the customer exists
     let customer;
     try {
@@ -203,7 +214,10 @@ app.get('/check-subscription/:customerId', async (req, res) => {
     } catch (error) {
       if (error.code === 'resource_missing') {
         console.log('❌ [LEGACY] Customer not found:', customerId);
-        return res.json({ isSubscribed: false });
+        return res.json({ 
+          isSubscribed: false,
+          clearData: true  // Signal frontend to clear invalid data
+        });
       }
       throw error;
     }

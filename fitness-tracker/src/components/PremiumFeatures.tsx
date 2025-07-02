@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { createCheckoutSession, checkSubscriptionStatus, cancelSubscription, clearInvalidCustomerId, SubscriptionStatus, SubscriptionDetails } from '../services/stripeService';
+import { createCheckoutSession, checkSubscriptionStatus, cancelSubscription, clearInvalidCustomerId, SubscriptionStatus } from '../services/stripeService';
+
+interface SubscriptionDetails {
+  priceId: string;
+  interval: string;
+  currentPeriodEnd: string;
+}
 
 const SUBSCRIPTION_PLANS = {
   monthly: {
