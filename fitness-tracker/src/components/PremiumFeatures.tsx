@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { createCheckoutSession, checkSubscriptionStatus, cancelSubscription, clearInvalidCustomerId, SubscriptionStatus } from '../services/stripeService';
-
-interface SubscriptionDetails {
-  priceId: string;
-  interval: string;
-  currentPeriodEnd: string;
-}
+import { createCheckoutSession, checkSubscriptionStatus, cancelSubscription, clearInvalidCustomerId, SubscriptionStatus, SubscriptionDetails } from '../services/stripeService';
 
 const SUBSCRIPTION_PLANS = {
   monthly: {
@@ -161,19 +155,13 @@ export const PremiumFeatures: React.FC = () => {
     }
   };
 
-
-
   if (loading) {
     return <div>Loading...</div>;
   }
 
-
-
   return (
     <div className="p-4 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-4 text-center">Premium Features</h2>
-      
-
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -211,7 +199,6 @@ export const PremiumFeatures: React.FC = () => {
             )}
           </div>
           
-
           {showConfirmDialog ? (
             <div className="bg-yellow-50 border border-yellow-400 p-4 rounded mb-4">
               <p className="text-yellow-800 mb-4">Are you sure you want to cancel your subscription? You'll lose access to all premium features.</p>
