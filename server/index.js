@@ -482,15 +482,37 @@ app.post('/find-customer-by-email', async (req, res) => {
 
 // Start server with error handling
 const server = app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
-  console.log('Environment:', process.env.NODE_ENV || 'development');
-  console.log('Render deployment ready!');
+  console.log(`✅ Server successfully running on port ${port}`);
+  console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
+  console.log('🎯 Listening on all interfaces (0.0.0.0)');
+  console.log('🚀 Render deployment ready!');
+  console.log('📊 Node.js version:', process.version);
+  console.log('⚡ Express server initialized successfully');
 }).on('error', (err) => {
+  console.error('❌ Server startup error:', err);
   if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${port} is already in use. Please try a different port or kill the process using this port.`);
+    console.error(`🚫 Port ${port} is already in use. Please try a different port or kill the process using this port.`);
     process.exit(1);
   } else {
-    console.error('Failed to start server:', err);
+    console.error('💥 Failed to start server:', err.message);
+    console.error('📋 Error details:', err);
     process.exit(1);
   }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('📴 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('📴 SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 }); 
