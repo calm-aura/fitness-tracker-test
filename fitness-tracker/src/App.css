@@ -1,0 +1,352 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 2rem 0;
+  color: white;
+}
+
+.App-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.workout-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+button {
+  background-color: #61dafb;
+  color: #282c34;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #4fa8c7;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.workout-list {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.workout-item {
+  border-bottom: 1px solid #eee;
+  padding: 1rem 0;
+  text-align: left;
+}
+
+.workout-item:last-child {
+  border-bottom: none;
+}
+
+.workout-item h3 {
+  margin: 0 0 0.5rem 0;
+  color: #282c34;
+}
+
+.workout-item p {
+  margin: 0.25rem 0;
+  color: #666;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.analysis-result {
+  background-color: #e3f2fd;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.analysis-result h3 {
+  color: #1976d2;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.analysis-result p {
+  margin: 0;
+  color: #333;
+}
+
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #282c34;
+  color: white;
+}
+
+.auth-box {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  margin-top: 2rem;
+}
+
+.auth-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.2rem;
+}
+
+.user-menu {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.user-menu span {
+  color: #666;
+}
+
+.user-menu button {
+  padding: 0.5rem 1rem;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.user-menu button:hover {
+  background-color: #d32f2f;
+}
+
+.subscription-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.subscription-banner p {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.subscription-banner button {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.subscription-banner button:hover {
+  transform: translateY(-2px);
+  background: #f8f9fa;
+}
+
+.locked-analysis {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  border: 1px dashed #ccc;
+  text-align: center;
+  color: #666;
+}
+
+.locked-analysis p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.subscribe-button-container {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.subscribe-button {
+  background-color: #6772e5;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.subscribe-button:hover {
+  background-color: #5469d4;
+}
+
+.subscribe-button:disabled {
+  background-color: #b7b7b7;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #dc3545;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.info-message {
+  color: #6c757d;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.premium-features {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+.pricing-card {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.price {
+  margin: 1.5rem 0;
+}
+
+.amount {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #2d3748;
+}
+
+.interval {
+  color: #718096;
+  margin-left: 0.5rem;
+}
+
+.features-list {
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.feature-item {
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  color: #4a5568;
+}
+
+.checkmark {
+  color: #48bb78;
+  margin-right: 1rem;
+  font-weight: bold;
+}
+
+.subscribe-button {
+  background-color: #4299e1;
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.subscribe-button:hover {
+  background-color: #3182ce;
+}
+
+.subscribe-button:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #e53e3e;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
