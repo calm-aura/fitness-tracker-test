@@ -1,0 +1,155 @@
+{
+  "workouts": [
+    {
+      "id": 1,
+      "user_id": "e69f643c-2a85-4bd8-811e-997cde103c7b",
+      "type": "r1",
+      "duration": 20,
+      "calories": 20,
+      "notes": "add 20 and 20",
+      "ai_analysis": "🔒 AI Analysis is a premium feature. Subscribe to get personalized workout insights!",
+      "created_at": "2025-07-03T01:04:02.741Z"
+    },
+    {
+      "id": 2,
+      "user_id": "e69f643c-2a85-4bd8-811e-997cde103c7b",
+      "type": "r2",
+      "duration": 30,
+      "calories": 30,
+      "notes": "add 30 and 30",
+      "ai_analysis": "🔒 AI Analysis is a premium feature. Subscribe to get personalized workout insights!",
+      "created_at": "2025-07-03T01:04:33.575Z"
+    },
+    {
+      "id": 3,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r1",
+      "duration": 10,
+      "calories": 10,
+      "notes": "add 10 and 10",
+      "ai_analysis": "The result of adding 10 and 10 is 20. ✨",
+      "created_at": "2025-07-03T01:10:13.837Z"
+    },
+    {
+      "id": 4,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r2",
+      "duration": 40,
+      "calories": 40,
+      "notes": "add 40 and 40",
+      "ai_analysis": null,
+      "created_at": "2025-07-03T01:10:34.858Z"
+    },
+    {
+      "id": 5,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r3",
+      "duration": 50,
+      "calories": 50,
+      "notes": "add 50 and 50",
+      "ai_analysis": "The result of adding 50 and 50 is 100. ✨",
+      "created_at": "2025-07-03T01:11:03.567Z"
+    },
+    {
+      "id": 6,
+      "user_id": "e69f643c-2a85-4bd8-811e-997cde103c7b",
+      "type": "h1 ",
+      "duration": 40,
+      "calories": 41,
+      "notes": "add 40 and 41",
+      "ai_analysis": "🔒 AI Analysis is a premium feature. Subscribe to get personalized workout insights!",
+      "created_at": "2025-07-03T01:13:48.315Z"
+    },
+    {
+      "id": 7,
+      "user_id": "e69f643c-2a85-4bd8-811e-997cde103c7b",
+      "type": "h2",
+      "duration": 30,
+      "calories": 120,
+      "notes": "add 120 and 30",
+      "ai_analysis": "🔒 AI Analysis is a premium feature. Subscribe to get personalized workout insights!",
+      "created_at": "2025-07-03T01:14:19.536Z"
+    },
+    {
+      "id": 8,
+      "user_id": "e69f643c-2a85-4bd8-811e-997cde103c7b",
+      "type": "h3",
+      "duration": 40,
+      "calories": 40,
+      "notes": "add 40 and 40",
+      "ai_analysis": "🔒 AI Analysis is a premium feature. Subscribe to get personalized workout insights!",
+      "created_at": "2025-07-03T01:21:16.542Z"
+    },
+    {
+      "id": 9,
+      "user_id": "e69f643c-2a85-4bd8-811e-997cde103c7b",
+      "type": "h4",
+      "duration": 50,
+      "calories": 50,
+      "notes": "add 50 and 50",
+      "ai_analysis": "🔒 AI Analysis is a premium feature. Subscribe to get personalized workout insights!",
+      "created_at": "2025-07-03T01:21:41.064Z"
+    },
+    {
+      "id": 10,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r4",
+      "duration": 60,
+      "calories": 60,
+      "notes": "add 60 and 60",
+      "ai_analysis": null,
+      "created_at": "2025-07-03T01:22:52.935Z"
+    },
+    {
+      "id": 11,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r5",
+      "duration": 30,
+      "calories": 40,
+      "notes": "add 30 and 40",
+      "ai_analysis": null,
+      "created_at": "2025-07-03T01:24:45.980Z"
+    },
+    {
+      "id": 12,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r6",
+      "duration": 50,
+      "calories": 52,
+      "notes": "add 70 and 70",
+      "ai_analysis": null,
+      "created_at": "2025-07-03T01:30:33.644Z"
+    },
+    {
+      "id": 13,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r7",
+      "duration": 45,
+      "calories": 45,
+      "notes": "add 45 and 45",
+      "ai_analysis": null,
+      "created_at": "2025-07-03T01:37:45.680Z"
+    },
+    {
+      "id": 14,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r8",
+      "duration": 60,
+      "calories": 60,
+      "notes": "add 4 and 5",
+      "ai_analysis": null,
+      "created_at": "2025-07-03T01:38:24.136Z"
+    },
+    {
+      "id": 15,
+      "user_id": "5bc0eb9f-9943-4a44-a234-38679fcadeae",
+      "type": "r9",
+      "duration": 40,
+      "calories": 40,
+      "notes": "add 40 and 40",
+      "ai_analysis": null,
+      "created_at": "2025-07-03T02:42:27.964Z"
+    }
+  ],
+  "nextWorkoutId": 16
+}

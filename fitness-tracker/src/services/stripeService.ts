@@ -6,6 +6,13 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY!);
 // Server configuration with fallback
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 
+// Log server configuration for debugging
+console.log('🔧 Server configuration:');
+console.log('- REACT_APP_SERVER_URL:', process.env.REACT_APP_SERVER_URL);
+console.log('- Final SERVER_URL:', SERVER_URL);
+console.log('- Current location:', window.location.href);
+console.log('- Is Vercel:', window.location.hostname.includes('vercel.app'));
+
 const STRIPE_CUSTOMER_ID_KEY = 'stripe_customer_id';
 
 // Helper function to get user-specific customer ID key
@@ -95,6 +102,32 @@ export const testServerConnection = async () => {
   } catch (error) {
     console.error('Server connection test failed:', error);
     return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+};
+
+// Simple health check for Vercel deployment testing
+export const simpleHealthCheck = async () => {
+  try {
+    console.log('🔍 Simple health check to:', SERVER_URL);
+    const response = await fetch(`${SERVER_URL}/health`);
+    console.log('✅ Health check status:', response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ Health check data:', data);
+      return { success: true, status: response.status, data };
+    } else {
+      console.log('❌ Health check failed with status:', response.status);
+      return { success: false, status: response.status };
+    }
+  } catch (error) {
+    console.error('❌ Health check error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error),
+      serverUrl: SERVER_URL,
+      currentUrl: window.location.href
+    };
   }
 };
 
@@ -282,12 +315,34 @@ export interface SubscriptionStatus {
   subscriptionDetails?: SubscriptionDetails;
 }
 
-export const checkSubscriptionStatus = async (userId: string): Promise<SubscriptionStatus> => {
+export const checkSubscriptionStatus = async (userId: string, userEmail?: string): Promise<SubscriptionStatus> => {
   try {
-    const customerId = getCustomerIdForUser(userId);
+    console.log('🔍 Starting subscription status check for user:', userId, 'email:', userEmail);
+    let customerId = getCustomerIdForUser(userId);
+    console.log('📋 Retrieved customer ID from storage:', customerId);
+    
+    // If no customer ID found, try to find it by email
     if (!customerId) {
-      console.log('No Stripe customer ID found for user:', userId);
-      return { isSubscribed: false };
+      console.log('❌ No Stripe customer ID found for user:', userId);
+      // Try to get user email from parameter, localStorage, or sessionStorage
+      const email = userEmail || localStorage.getItem('user_email') || sessionStorage.getItem('user_email');
+      console.log('📧 Using email for customer lookup:', email);
+      if (email) {
+        console.log('🔍 Attempting to find customer ID by email:', email);
+        customerId = await findCustomerIdByEmail(email, userId);
+        if (customerId) {
+          console.log('✅ Found customer ID by email:', customerId);
+        } else {
+          console.log('❌ No customer ID found by email');
+        }
+      } else {
+        console.log('❌ No email available for customer lookup');
+      }
+      
+      if (!customerId) {
+        console.log('❌ No customer ID found, returning not subscribed');
+        return { isSubscribed: false };
+      }
     }
 
     console.log('Checking subscription status for customer:', customerId, 'user:', userId);
@@ -361,7 +416,9 @@ export const checkSubscriptionStatus = async (userId: string): Promise<Subscript
 // Helper function to find customer ID by email when none is stored
 const findCustomerIdByEmail = async (email: string, userId: string): Promise<string | null> => {
   try {
-    console.log('Attempting to find customer ID for email:', email);
+    console.log('🔍 Attempting to find customer ID for email:', email, 'user:', userId);
+    console.log('📡 Making request to:', `${SERVER_URL}/find-customer-by-email`);
+    
     const response = await fetch(`${SERVER_URL}/find-customer-by-email`, {
       method: 'POST',
       headers: {
@@ -370,22 +427,28 @@ const findCustomerIdByEmail = async (email: string, userId: string): Promise<str
       body: JSON.stringify({ email, userId }),
     });
 
+    console.log('📡 Response status:', response.status);
+    
     if (!response.ok) {
-      console.log('Find customer endpoint failed:', response.status);
+      console.log('❌ Find customer endpoint failed:', response.status);
       return null;
     }
 
     const data = await response.json();
+    console.log('📡 Response data:', data);
+    
     if (data.customerId) {
-      console.log('Found customer ID:', data.customerId);
+      console.log('✅ Found customer ID:', data.customerId);
       // Store it for future use
       setCustomerIdForUser(userId, data.customerId);
       return data.customerId;
+    } else {
+      console.log('❌ No customer ID in response');
     }
 
     return null;
   } catch (error) {
-    console.error('Error finding customer by email:', error);
+    console.error('❌ Error finding customer by email:', error);
     return null;
   }
 }; 

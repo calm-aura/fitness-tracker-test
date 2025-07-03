@@ -31,8 +31,42 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // Enable CORS for all routes with more detailed configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://localhost:3000',
+  'https://fitness-tracker-frontend.vercel.app',
+  'https://fitness-tracker-frontend-git-main.vercel.app',
+  'https://fitness-tracker-frontend-git-develop.vercel.app'
+];
+
+// Add the CLIENT_URL if it's set
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    // Allow any Vercel deployment
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow specific allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -59,17 +93,52 @@ app.get('/health', (req, res) => {
 app.post('/create-checkout-session', async (req, res) => {
   try {
     const { priceId, userId, email } = req.body;
-    console.log('Creating checkout session for price:', priceId);
+    console.log('Creating checkout session for price:', priceId, 'user:', userId, 'email:', email);
 
-    // First, create a customer
-    const customer = await stripe.customers.create({
-      metadata: {
-        userId: userId
-      },
-      email: email
+    // First, check if a customer already exists for this email
+    let customer;
+    const existingCustomers = await stripe.customers.list({
+      email: email,
+      limit: 1
     });
 
-    console.log('Created customer:', customer.id);
+    if (existingCustomers.data.length > 0) {
+      customer = existingCustomers.data[0];
+      console.log('Found existing customer:', customer.id, 'for email:', email);
+      
+      // Update the customer's metadata if needed
+      if (customer.metadata.userId !== userId) {
+        console.log('Updating customer metadata from:', customer.metadata.userId, 'to:', userId);
+        customer = await stripe.customers.update(customer.id, {
+          metadata: {
+            userId: userId
+          }
+        });
+      }
+    } else {
+      // Create a new customer
+      customer = await stripe.customers.create({
+        metadata: {
+          userId: userId
+        },
+        email: email
+      });
+      console.log('Created new customer:', customer.id);
+    }
+
+    // Check if the customer already has an active subscription
+    const existingSubscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: 'active',
+      limit: 1
+    });
+
+    if (existingSubscriptions.data.length > 0) {
+      console.log('Customer already has an active subscription:', existingSubscriptions.data[0].id);
+      return res.status(400).json({ 
+        error: 'You already have an active subscription. Please cancel your current subscription before creating a new one.' 
+      });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -493,6 +562,217 @@ app.post('/find-customer-by-email', async (req, res) => {
     res.status(500).json({ error: 'Failed to find customer' });
   }
 });
+
+// ================== WORKOUT MANAGEMENT ENDPOINTS ==================
+
+// File-based workout storage for persistence
+const fs = require('fs');
+
+const WORKOUTS_FILE = path.join(__dirname, 'workouts.json');
+
+// Load workouts from file or initialize empty array
+let workouts = [];
+let nextWorkoutId = 1;
+
+function loadWorkouts() {
+  try {
+    if (fs.existsSync(WORKOUTS_FILE)) {
+      const data = fs.readFileSync(WORKOUTS_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      workouts = parsed.workouts || [];
+      nextWorkoutId = parsed.nextWorkoutId || 1;
+      console.log(`📂 Loaded ${workouts.length} workouts from file`);
+    } else {
+      console.log('📂 No workouts file found, starting with empty storage');
+    }
+  } catch (error) {
+    console.error('❌ Error loading workouts:', error);
+    workouts = [];
+    nextWorkoutId = 1;
+  }
+}
+
+function saveWorkouts() {
+  try {
+    const data = {
+      workouts: workouts,
+      nextWorkoutId: nextWorkoutId
+    };
+    fs.writeFileSync(WORKOUTS_FILE, JSON.stringify(data, null, 2));
+    console.log(`💾 Saved ${workouts.length} workouts to file`);
+  } catch (error) {
+    console.error('❌ Error saving workouts:', error);
+  }
+}
+
+// Load workouts on server start
+loadWorkouts();
+
+// Get all workouts for a user
+app.get('/api/workouts/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('📋 Getting workouts for user:', userId);
+    
+    // Filter workouts for this user
+    const userWorkouts = workouts.filter(workout => workout.user_id === userId);
+    console.log(`✅ Found ${userWorkouts.length} workouts for user ${userId}`);
+    
+    res.json(userWorkouts);
+  } catch (error) {
+    console.error('❌ Error getting workouts:', error);
+    res.status(500).json({ error: 'Failed to get workouts' });
+  }
+});
+
+// Create a new workout
+app.post('/api/workouts', async (req, res) => {
+  try {
+    const { user_id, type, duration, calories, notes, ai_analysis } = req.body;
+    console.log('💪 Creating workout for user:', user_id);
+    
+    if (!user_id || !type || !duration || calories === undefined) {
+      return res.status(400).json({ error: 'Missing required fields: user_id, type, duration, calories' });
+    }
+    
+    const workout = {
+      id: nextWorkoutId++,
+      user_id,
+      type,
+      duration: Number(duration),
+      calories: Number(calories),
+      notes: notes || null,
+      ai_analysis: ai_analysis || null,
+      created_at: new Date().toISOString()
+    };
+    
+    workouts.push(workout);
+    saveWorkouts(); // Save to file
+    console.log('✅ Workout created successfully:', workout.id);
+    
+    res.status(201).json(workout);
+  } catch (error) {
+    console.error('❌ Error creating workout:', error);
+    res.status(500).json({ error: 'Failed to create workout' });
+  }
+});
+
+// Update a workout
+app.put('/api/workouts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id, type, duration, calories, notes, ai_analysis } = req.body;
+    console.log('🔄 Updating workout:', id, 'for user:', user_id);
+    
+    const workoutIndex = workouts.findIndex(w => w.id === Number(id) && w.user_id === user_id);
+    
+    if (workoutIndex === -1) {
+      return res.status(404).json({ error: 'Workout not found' });
+    }
+    
+    // Update the workout
+    workouts[workoutIndex] = {
+      ...workouts[workoutIndex],
+      type: type || workouts[workoutIndex].type,
+      duration: duration !== undefined ? Number(duration) : workouts[workoutIndex].duration,
+      calories: calories !== undefined ? Number(calories) : workouts[workoutIndex].calories,
+      notes: notes !== undefined ? notes : workouts[workoutIndex].notes,
+      ai_analysis: ai_analysis !== undefined ? ai_analysis : workouts[workoutIndex].ai_analysis,
+      updated_at: new Date().toISOString()
+    };
+    
+    saveWorkouts(); // Save to file
+    console.log('✅ Workout updated successfully:', id);
+    res.json(workouts[workoutIndex]);
+  } catch (error) {
+    console.error('❌ Error updating workout:', error);
+    res.status(500).json({ error: 'Failed to update workout' });
+  }
+});
+
+// Delete a workout
+app.delete('/api/workouts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id } = req.query;
+    console.log('🗑️ Deleting workout:', id, 'for user:', user_id);
+    
+    const workoutIndex = workouts.findIndex(w => w.id === Number(id) && w.user_id === user_id);
+    
+    if (workoutIndex === -1) {
+      return res.status(404).json({ error: 'Workout not found' });
+    }
+    
+    workouts.splice(workoutIndex, 1);
+    saveWorkouts(); // Save to file
+    console.log('✅ Workout deleted successfully:', id);
+    
+    res.json({ success: true, message: 'Workout deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting workout:', error);
+    res.status(500).json({ error: 'Failed to delete workout' });
+  }
+});
+
+// AI Analysis endpoint - calls N8N webhook for actual calculations
+app.post('/api/ai-analysis', async (req, res) => {
+  try {
+    const { notes, userId } = req.body;
+    console.log('🤖 AI Analysis requested for user:', userId);
+    
+    if (!notes || !userId) {
+      return res.status(400).json({ error: 'Notes and userId are required' });
+    }
+    
+    // Call the N8N webhook for actual AI analysis
+    console.log('📡 Calling N8N webhook with notes:', notes);
+    const webhookResponse = await fetch('http://localhost:5678/webhook/L1pjiIxvYM6AIBoK', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        notes: notes
+      })
+    });
+
+    if (!webhookResponse.ok) {
+      console.error('❌ N8N webhook failed:', webhookResponse.status, webhookResponse.statusText);
+      throw new Error(`N8N webhook failed: ${webhookResponse.status}`);
+    }
+
+    const data = await webhookResponse.json();
+    console.log('✅ N8N webhook response:', data);
+
+    // Extract analysis from N8N response
+    let analysis;
+    if (typeof data === 'string') {
+      analysis = data;
+    } else if (data.data) {
+      analysis = data.data;
+    } else {
+      // Try to find analysis in common response fields
+      const possibleFields = ['output', 'result', 'response', 'message', 'analysis'];
+      for (const field of possibleFields) {
+        if (data[field]) {
+          analysis = data[field];
+          break;
+        }
+      }
+      if (!analysis) {
+        analysis = JSON.stringify(data);
+      }
+    }
+    
+    console.log('✅ AI Analysis generated for user:', userId, 'Analysis:', analysis);
+    res.json({ analysis: analysis });
+  } catch (error) {
+    console.error('❌ Error generating AI analysis:', error);
+    res.status(500).json({ error: 'Failed to generate AI analysis: ' + error.message });
+  }
+});
+
+// =================== END WORKOUT ENDPOINTS ===================
 
 // Start server with error handling
 const server = app.listen(port, '0.0.0.0', () => {

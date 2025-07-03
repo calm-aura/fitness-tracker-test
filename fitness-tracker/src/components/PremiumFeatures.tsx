@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { createCheckoutSession, checkSubscriptionStatus, cancelSubscription, clearInvalidCustomerId, SubscriptionStatus, SubscriptionDetails } from '../services/stripeService';
+import { createCheckoutSession, checkSubscriptionStatus, cancelSubscription, clearInvalidCustomerId, clearAllStripeData, simpleHealthCheck, SubscriptionStatus, SubscriptionDetails, testServerConnection } from '../services/stripeService';
 
 const SUBSCRIPTION_PLANS = {
   monthly: {
@@ -23,6 +23,7 @@ export const PremiumFeatures: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<boolean>(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   // Helper function to get plan display name from subscription details
   const getPlanDisplayName = (subscriptionDetails?: SubscriptionDetails): string => {
@@ -50,8 +51,19 @@ export const PremiumFeatures: React.FC = () => {
         setLoading(false);
         return;
       }
+      
+      // Store user email for subscription status checking
+      if (user.email) {
+        localStorage.setItem('user_email', user.email);
+        console.log('Stored user email for subscription checking:', user.email);
+      } else {
+        console.log('No user email available for subscription checking');
+      }
+      
       try {
-        const status = await checkSubscriptionStatus(user.id);
+        console.log('Checking subscription status for user:', user.id, 'email:', user.email);
+        const status = await checkSubscriptionStatus(user.id, user.email);
+        console.log('Subscription status result:', status);
         setSubscriptionStatus(status);
       } catch (err) {
         console.error('Error checking subscription status:', err);
@@ -109,7 +121,7 @@ export const PremiumFeatures: React.FC = () => {
         setShowConfirmDialog(false);
         
         // Refresh subscription status from server to get accurate state
-        const updatedStatus = await checkSubscriptionStatus(user.id);
+        const updatedStatus = await checkSubscriptionStatus(user.id, user.email);
         setSubscriptionStatus(updatedStatus);
         
         if (!updatedStatus.isSubscribed) {
@@ -134,7 +146,7 @@ export const PremiumFeatures: React.FC = () => {
             setError('🔄 Refreshing subscription status...');
             
             try {
-              const updatedStatus = await checkSubscriptionStatus(user.id);
+              const updatedStatus = await checkSubscriptionStatus(user.id, user.email);
               setSubscriptionStatus(updatedStatus);
               setError(null);
               setSuccess('✅ Subscription data fixed! Status updated successfully.');
@@ -155,6 +167,320 @@ export const PremiumFeatures: React.FC = () => {
     }
   };
 
+  // Debug function to manually trigger customer ID lookup
+  const debugCustomerLookup = async () => {
+    if (!user?.email || !user?.id) {
+      setDebugInfo('No user email or ID available');
+      return;
+    }
+
+    setDebugInfo('🔍 Starting debug customer lookup...');
+    
+    try {
+      // Test server connection
+      setDebugInfo('📡 Testing server connection...');
+      const connectionTest = await testServerConnection();
+      setDebugInfo(prev => prev + '\n📡 Server connection: ' + JSON.stringify(connectionTest, null, 2));
+      
+      // Check localStorage
+      const storedEmail = localStorage.getItem('user_email');
+      const customerIdKey = `stripe_customer_id_${user.id}`;
+      const storedCustomerId = localStorage.getItem(customerIdKey);
+      
+      setDebugInfo(prev => prev + `\n📋 localStorage check:
+        - user_email: ${storedEmail}
+        - customer_id_key: ${customerIdKey}
+        - stored_customer_id: ${storedCustomerId}
+        - current_user_email: ${user.email}
+        - current_user_id: ${user.id}`);
+      
+      // Try to find customer by email
+      setDebugInfo(prev => prev + '\n🔍 Attempting to find customer by email...');
+      const status = await checkSubscriptionStatus(user.id, user.email);
+      setDebugInfo(prev => prev + '\n✅ Subscription check result: ' + JSON.stringify(status, null, 2));
+      
+    } catch (error) {
+      setDebugInfo(prev => prev + '\n❌ Error during debug: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  };
+
+  // Function to manually set customer ID for testing
+  const setCustomerIdManually = () => {
+    if (!user?.id) {
+      setDebugInfo('No user ID available');
+      return;
+    }
+    
+    // Set the known customer ID from backend logs
+    const customerId = 'cus_SbLzMs1joDkTwu';
+    const customerIdKey = `stripe_customer_id_${user.id}`;
+    localStorage.setItem(customerIdKey, customerId);
+    
+    setDebugInfo(prev => prev + `\n🔧 Manually set customer ID:
+      - Key: ${customerIdKey}
+      - Value: ${customerId}`);
+    
+    // Refresh subscription status
+    setTimeout(async () => {
+      try {
+        const status = await checkSubscriptionStatus(user.id, user.email);
+        setDebugInfo(prev => prev + '\n✅ Updated subscription status: ' + JSON.stringify(status, null, 2));
+        setSubscriptionStatus(status);
+      } catch (error) {
+        setDebugInfo(prev => prev + '\n❌ Error refreshing status: ' + (error instanceof Error ? error.message : String(error)));
+      }
+    }, 1000);
+  };
+
+  // Function to clear all Stripe data
+  const clearAllData = () => {
+    clearAllStripeData();
+    setDebugInfo(prev => prev + '\n🧹 Cleared all Stripe data from localStorage');
+    
+    // Refresh subscription status
+    setTimeout(async () => {
+      if (!user?.id || !user?.email) {
+        setDebugInfo(prev => prev + '\n❌ No user available for status refresh');
+        return;
+      }
+      
+      try {
+        const status = await checkSubscriptionStatus(user.id, user.email);
+        setDebugInfo(prev => prev + '\n✅ Updated subscription status after clear: ' + JSON.stringify(status, null, 2));
+        setSubscriptionStatus(status);
+      } catch (error) {
+        setDebugInfo(prev => prev + '\n❌ Error refreshing status: ' + (error instanceof Error ? error.message : String(error)));
+      }
+    }, 1000);
+  };
+
+  // Debug function to check environment variables
+  const debugEnvironment = () => {
+    const envInfo = {
+      serverUrl: process.env.REACT_APP_SERVER_URL || 'NOT SET',
+      stripeKey: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ? 'SET' : 'NOT SET',
+      nodeEnv: process.env.NODE_ENV,
+      currentUrl: window.location.href,
+      isLocalhost: window.location.hostname === 'localhost',
+      isVercel: window.location.hostname.includes('vercel.app')
+    };
+    
+    setDebugInfo(prev => prev + '\n🌍 Environment Check:\n' + JSON.stringify(envInfo, null, 2));
+  };
+
+  // Debug function to test backend connectivity
+  const testBackendConnectivity = async () => {
+    setDebugInfo(prev => prev + '\n🔗 Testing backend connectivity...');
+    
+    try {
+      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+      setDebugInfo(prev => prev + `\n📡 Testing connection to: ${serverUrl}`);
+      
+      const response = await fetch(`${serverUrl}/health`);
+      const text = await response.text();
+      
+      setDebugInfo(prev => prev + `\n✅ Backend response status: ${response.status}`);
+      setDebugInfo(prev => prev + `\n📄 Response: ${text}`);
+      
+      if (response.ok) {
+        setDebugInfo(prev => prev + '\n🎉 Backend is accessible!');
+      } else {
+        setDebugInfo(prev => prev + '\n❌ Backend returned error status');
+      }
+    } catch (error) {
+      setDebugInfo(prev => prev + `\n❌ Backend connection failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  // Debug function to test Vercel deployment
+  const testVercelDeployment = async () => {
+    setDebugInfo(prev => prev + '\n🚀 Testing Vercel deployment...');
+    
+    try {
+      // Test 1: Check if we're on Vercel
+      const isVercel = window.location.hostname.includes('vercel.app');
+      setDebugInfo(prev => prev + `\n📍 Deployment: ${isVercel ? 'Vercel' : 'Local'}`);
+      setDebugInfo(prev => prev + `\n🌐 URL: ${window.location.href}`);
+      
+      // Test 2: Check environment variables
+      const serverUrl = process.env.REACT_APP_SERVER_URL;
+      const stripeKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+      setDebugInfo(prev => prev + `\n🔧 Server URL: ${serverUrl || 'NOT SET'}`);
+      setDebugInfo(prev => prev + `\n💳 Stripe Key: ${stripeKey ? 'SET' : 'NOT SET'}`);
+      
+      // Test 3: Test backend connectivity
+      if (serverUrl) {
+        setDebugInfo(prev => prev + `\n📡 Testing backend at: ${serverUrl}`);
+        
+        try {
+          const response = await fetch(`${serverUrl}/health`);
+          const text = await response.text();
+          
+          setDebugInfo(prev => prev + `\n✅ Backend Status: ${response.status}`);
+          setDebugInfo(prev => prev + `\n📄 Response: ${text}`);
+          
+          if (response.ok) {
+            setDebugInfo(prev => prev + '\n🎉 Backend is accessible from Vercel!');
+          } else {
+            setDebugInfo(prev => prev + '\n❌ Backend returned error status');
+          }
+        } catch (error) {
+          setDebugInfo(prev => prev + `\n❌ Backend connection failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      } else {
+        setDebugInfo(prev => prev + '\n❌ No server URL configured');
+      }
+      
+      // Test 4: Test subscription check
+      if (user?.id && user?.email) {
+        setDebugInfo(prev => prev + `\n👤 Testing subscription for user: ${user.id}`);
+        
+        try {
+          const status = await checkSubscriptionStatus(user.id, user.email);
+          setDebugInfo(prev => prev + `\n📊 Subscription Status: ${JSON.stringify(status, null, 2)}`);
+        } catch (error) {
+          setDebugInfo(prev => prev + `\n❌ Subscription check failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      
+    } catch (error) {
+      setDebugInfo(prev => prev + `\n❌ Test failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  // Simple health check function
+  const runSimpleHealthCheck = async () => {
+    setDebugInfo(prev => prev + '\n🔍 Running simple health check...');
+    
+    try {
+      const result = await simpleHealthCheck();
+      setDebugInfo(prev => prev + '\n📊 Health Check Result: ' + JSON.stringify(result, null, 2));
+      
+      if (result.success) {
+        setDebugInfo(prev => prev + '\n🎉 Backend is accessible!');
+      } else {
+        setDebugInfo(prev => prev + '\n❌ Backend is not accessible');
+      }
+    } catch (error) {
+      setDebugInfo(prev => prev + `\n❌ Health check failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  // Comprehensive debug function for Vercel deployment issues
+  const debugVercelSubscriptionIssue = async () => {
+    if (!user?.email || !user?.id) {
+      setDebugInfo('❌ No user email or ID available');
+      return;
+    }
+
+    setDebugInfo('🔍 Starting comprehensive Vercel subscription debug...\n');
+    
+    try {
+      // Step 1: Environment check
+      setDebugInfo(prev => prev + '📋 Step 1: Environment Variables\n');
+      const envInfo = {
+        serverUrl: process.env.REACT_APP_SERVER_URL,
+        stripeKey: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ? 'Present' : 'Missing',
+        currentUrl: window.location.href,
+        isVercel: window.location.hostname.includes('vercel.app'),
+        userAgent: navigator.userAgent
+      };
+      setDebugInfo(prev => prev + JSON.stringify(envInfo, null, 2) + '\n\n');
+      
+      // Step 2: Server connectivity test
+      setDebugInfo(prev => prev + '📡 Step 2: Server Connectivity Test\n');
+      const healthCheck = await simpleHealthCheck();
+      setDebugInfo(prev => prev + JSON.stringify(healthCheck, null, 2) + '\n\n');
+      
+      // Step 3: Local storage check
+      setDebugInfo(prev => prev + '💾 Step 3: Local Storage Check\n');
+      const storedEmail = localStorage.getItem('user_email');
+      const customerIdKey = `stripe_customer_id_${user.id}`;
+      const storedCustomerId = localStorage.getItem(customerIdKey);
+      const storageInfo = {
+        userEmail: storedEmail,
+        customerIdKey,
+        storedCustomerId,
+        currentUserEmail: user.email,
+        currentUserId: user.id
+      };
+      setDebugInfo(prev => prev + JSON.stringify(storageInfo, null, 2) + '\n\n');
+      
+      // Step 4: Direct subscription check
+      setDebugInfo(prev => prev + '🔍 Step 4: Direct Subscription Check\n');
+      try {
+        const subscriptionStatus = await checkSubscriptionStatus(user.id, user.email);
+        setDebugInfo(prev => prev + JSON.stringify(subscriptionStatus, null, 2) + '\n\n');
+      } catch (subError) {
+        setDebugInfo(prev => prev + `❌ Subscription check failed: ${subError}\n\n`);
+      }
+      
+      // Step 5: Customer lookup by email
+      setDebugInfo(prev => prev + '🔍 Step 5: Customer Lookup by Email\n');
+      try {
+        const response = await fetch(`${process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'}/find-customer-by-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: user.email, userId: user.id }),
+        });
+        
+        const customerData = await response.json();
+        setDebugInfo(prev => prev + `Status: ${response.status}\nData: ${JSON.stringify(customerData, null, 2)}\n\n`);
+      } catch (customerError) {
+        setDebugInfo(prev => prev + `❌ Customer lookup failed: ${customerError}\n\n`);
+      }
+      
+      // Step 6: Direct subscription check with known customer ID
+      setDebugInfo(prev => prev + '🔍 Step 6: Direct Check with Known Customer ID\n');
+      try {
+        // Based on backend logs, we know the customer ID for hervedovbus@gmail.com
+        const knownCustomerId = 'cus_SbLzMs1joDkTwu';
+        const directResponse = await fetch(`${process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'}/check-subscription/${knownCustomerId}/${user.id}`);
+        
+        const directData = await directResponse.json();
+        setDebugInfo(prev => prev + `Status: ${directResponse.status}\nData: ${JSON.stringify(directData, null, 2)}\n\n`);
+      } catch (directError) {
+        setDebugInfo(prev => prev + `❌ Direct check failed: ${directError}\n\n`);
+      }
+      
+      setDebugInfo(prev => prev + '✅ Comprehensive debug complete!\n');
+      
+    } catch (error) {
+      setDebugInfo(prev => prev + `❌ Debug failed: ${error}\n`);
+    }
+  };
+
+  // Set known customer ID for testing (based on backend logs)
+  const setKnownCustomerId = () => {
+    if (!user?.id) {
+      setDebugInfo('❌ No user ID available');
+      return;
+    }
+    
+    // Based on backend logs, we know the customer ID for hervedovbus@gmail.com
+    const knownCustomerId = 'cus_SbLzMs1joDkTwu';
+    const customerIdKey = `stripe_customer_id_${user.id}`;
+    
+    localStorage.setItem(customerIdKey, knownCustomerId);
+    localStorage.setItem('user_email', user.email || '');
+    
+    setDebugInfo(prev => prev + `✅ Set known customer ID: ${knownCustomerId} for user: ${user.id}\n`);
+    setDebugInfo(prev => prev + `📧 User email: ${user.email}\n`);
+    
+    // Refresh subscription status
+    setTimeout(async () => {
+      try {
+        const status = await checkSubscriptionStatus(user.id, user.email);
+        setSubscriptionStatus(status);
+        setDebugInfo(prev => prev + `🔄 Refreshed subscription status: ${JSON.stringify(status, null, 2)}\n`);
+      } catch (error) {
+        setDebugInfo(prev => prev + `❌ Failed to refresh status: ${error}\n`);
+      }
+    }, 1000);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -162,6 +488,75 @@ export const PremiumFeatures: React.FC = () => {
   return (
     <div className="p-4 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-4 text-center">Premium Features</h2>
+      
+      {/* Test text to see if component is rendering */}
+      <div className="mb-4 p-2 bg-yellow-100 border border-yellow-400 rounded">
+        <p className="text-yellow-800 text-sm">🔧 DEBUG: Component is rendering! User ID: {user?.id || 'none'}</p>
+      </div>
+      
+      {/* Debug section */}
+      <div className="mb-4 p-3 bg-gray-100 rounded">
+        <h3 className="font-semibold mb-2">Debug Information</h3>
+        <button 
+          onClick={debugCustomerLookup}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Debug Customer Lookup
+        </button>
+        <button 
+          onClick={setCustomerIdManually}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Set Customer ID Manually
+        </button>
+        <button 
+          onClick={clearAllData}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Clear All Stripe Data
+        </button>
+        <button 
+          onClick={debugEnvironment}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Debug Environment
+        </button>
+        <button 
+          onClick={testBackendConnectivity}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Test Backend Connectivity
+        </button>
+        <button 
+          onClick={testVercelDeployment}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Test Vercel Deployment
+        </button>
+        <button 
+          onClick={runSimpleHealthCheck}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Run Simple Health Check
+        </button>
+        <button 
+          onClick={debugVercelSubscriptionIssue}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Debug Vercel Subscription Issue
+        </button>
+        <button 
+          onClick={setKnownCustomerId}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Set Known Customer ID
+        </button>
+        {debugInfo && (
+          <pre className="text-xs bg-white p-2 rounded border overflow-auto max-h-40">
+            {debugInfo}
+          </pre>
+        )}
+      </div>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">

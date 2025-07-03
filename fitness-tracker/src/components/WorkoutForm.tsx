@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Workout } from '../types/workout';
-import { sendToWebhook } from '../services/webhookService';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { checkSubscriptionStatus } from '../services/stripeService';
+import { createWorkout, getAIAnalysis } from '../services/workoutService';
 
 interface WorkoutFormProps {
   onAddWorkout: (workout: Workout) => void;
@@ -56,8 +55,7 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onAddWorkout }) => {
           
           if (hasSubscription) {
             console.log('✅ User has subscription, calling AI analysis...');
-            const result = await sendToWebhook(notes);
-            aiAnalysis = result.analysis;
+            aiAnalysis = await getAIAnalysis(notes.trim(), user.id);
             setAnalysis(aiAnalysis);
             console.log('✅ AI analysis completed:', aiAnalysis);
           } else {
@@ -76,33 +74,27 @@ export const WorkoutForm: React.FC<WorkoutFormProps> = ({ onAddWorkout }) => {
         console.log('No notes provided, skipping AI analysis');
       }
 
-      // Save to Supabase
-      const { data: workoutData, error: dbError } = await supabase
-        .from('workouts')
-        .insert([
-          {
-            user_id: user.id,
-            type,
-            duration: Number(duration),
-            calories: Number(calories),
-            notes: notes.trim() || null,
-            ai_analysis: aiAnalysis
-          }
-        ])
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
-      // Create local workout object
-      const workout: Workout = {
-        id: workoutData.id,
+      // Save workout using backend service
+      const workoutData = {
+        user_id: user.id,
         type,
         duration: Number(duration),
-        date: workoutData.created_at,
         calories: Number(calories),
         notes: notes.trim() || undefined,
         ai_analysis: aiAnalysis || undefined
+      };
+
+      const savedWorkout = await createWorkout(workoutData);
+
+      // Convert to frontend Workout format
+      const workout: Workout = {
+        id: savedWorkout.id.toString(),
+        type: savedWorkout.type,
+        duration: savedWorkout.duration,
+        date: savedWorkout.created_at,
+        calories: savedWorkout.calories,
+        notes: savedWorkout.notes || undefined,
+        ai_analysis: savedWorkout.ai_analysis || undefined
       };
 
       // Update local state

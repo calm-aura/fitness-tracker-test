@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import { WorkoutForm } from './components/WorkoutForm';
 import { WorkoutList } from './components/WorkoutList';
@@ -10,13 +10,20 @@ import { Workout } from './types/workout';
 
 function AppContent() {
   const { user, signOut, loading } = useAuth();
+  const [localWorkouts, setLocalWorkouts] = useState<Workout[]>([]);
 
   const addWorkout = (workout: Workout) => {
-    // Workout is saved to database in WorkoutForm, no local state needed
-    // WorkoutList will automatically refresh and show the new workout
+    // Add to local state for immediate UI update
+    setLocalWorkouts(prev => [workout, ...prev]);
+    console.log('✅ Workout added to local state:', workout.type);
   };
 
-
+  const handleWorkoutsUpdate = React.useCallback((workouts: Workout[]) => {
+    // Update local workouts when backend data is fetched
+    // This helps avoid duplicates and keeps everything in sync
+    setLocalWorkouts([]);
+    console.log('🔄 Workouts updated from backend:', workouts.length);
+  }, []);
 
   if (loading) {
     return (
@@ -42,7 +49,10 @@ function AppContent() {
       <main className="App-main">
         <PremiumFeatures />
         <WorkoutForm onAddWorkout={addWorkout} />
-        <WorkoutList workouts={[]} />
+        <WorkoutList 
+          workouts={localWorkouts} 
+          onWorkoutsUpdate={handleWorkoutsUpdate}
+        />
       </main>
     </div>
   );
