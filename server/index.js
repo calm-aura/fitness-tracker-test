@@ -37,7 +37,8 @@ const allowedOrigins = [
   'https://fitness-tracker-frontend.vercel.app',
   'https://fitness-tracker-frontend-git-main.vercel.app',
   'https://fitness-tracker-frontend-git-develop.vercel.app',
-  'https://fitness-tracker-test-lake.vercel.app'  // Add the specific Vercel domain
+  'https://fitness-tracker-test-lake.vercel.app',  // Add the specific Vercel domain
+  'https://fitness-tracker-test-lake.vercel.app/'   // Also add with trailing slash
 ];
 
 // Add the CLIENT_URL if it's set
@@ -52,21 +53,26 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Normalize the origin by removing trailing slash
+    console.log('CORS check for origin:', origin);
+    
+    // Always allow localhost for development
+    if (origin.includes('localhost')) {
+      console.log('CORS: Allowing localhost origin');
+      return callback(null, true);
+    }
+    
+    // Always allow any Vercel deployment (this should fix the issue)
+    if (origin.includes('vercel.app')) {
+      console.log('CORS: Allowing Vercel origin');
+      return callback(null, true);
+    }
+    
+    // Normalize the origin by removing trailing slash for comparison
     const normalizedOrigin = origin.replace(/\/$/, '');
     
-    // Allow localhost for development
-    if (normalizedOrigin.includes('localhost')) {
-      return callback(null, true);
-    }
-    
-    // Allow any Vercel deployment (more flexible matching)
-    if (normalizedOrigin.includes('vercel.app')) {
-      return callback(null, true);
-    }
-    
     // Allow specific allowed origins (check both with and without trailing slash)
-    if (allowedOrigins.indexOf(normalizedOrigin) !== -1) {
+    if (allowedOrigins.indexOf(normalizedOrigin) !== -1 || allowedOrigins.indexOf(origin) !== -1) {
+      console.log('CORS: Allowing explicit origin');
       return callback(null, true);
     }
     
