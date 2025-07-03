@@ -1,7 +1,7 @@
 const path = require('path');
 require('dotenv').config();
 
-// Log environment setup
+// Log environment setup --Just testing
 console.log('Environment Setup:');
 console.log('- STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✓ Present' : '✗ Missing');
 console.log('- STRIPE_SECRET_KEY type:', typeof process.env.STRIPE_SECRET_KEY);
