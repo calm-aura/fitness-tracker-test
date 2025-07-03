@@ -594,7 +594,6 @@ app.post('/find-customer-by-email', async (req, res) => {
 
 // File-based workout storage for persistence
 const fs = require('fs');
-const path = require('path');
 
 const WORKOUTS_FILE = path.join(__dirname, 'workouts.json');
 
