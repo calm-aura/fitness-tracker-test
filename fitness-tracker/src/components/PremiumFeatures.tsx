@@ -481,6 +481,48 @@ export const PremiumFeatures: React.FC = () => {
     }, 1000);
   };
 
+  // Simple connectivity test - bypasses all subscription logic
+  const testBasicConnectivity = async () => {
+    try {
+      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+      setDebugInfo('🔍 Testing basic connectivity...\\n');
+      setDebugInfo(prev => prev + `📡 Server URL: ${serverUrl}\\n`);
+      setDebugInfo(prev => prev + `🌐 Current location: ${window.location.href}\\n`);
+      
+      // Test 1: Simple fetch to health endpoint
+      setDebugInfo(prev => prev + '\\n📋 Test 1: Health endpoint\\n');
+      const healthResponse = await fetch(`${serverUrl}/health`);
+      setDebugInfo(prev => prev + `Status: ${healthResponse.status}\\n`);
+      
+      if (healthResponse.ok) {
+        const healthData = await healthResponse.json();
+        setDebugInfo(prev => prev + `✅ Health check successful: ${JSON.stringify(healthData)}\\n`);
+        
+        // Test 2: Try the subscription endpoint with the known customer ID
+        setDebugInfo(prev => prev + '\\n📋 Test 2: Subscription endpoint\\n');
+        const knownCustomerId = 'cus_SbLzMs1joDkTwu';
+        const knownUserId = '5bc0eb9f-9943-4a44-a234-38679fcadeae';
+        
+        const subResponse = await fetch(`${serverUrl}/check-subscription/${knownCustomerId}/${knownUserId}`);
+        setDebugInfo(prev => prev + `Subscription endpoint status: ${subResponse.status}\\n`);
+        
+        if (subResponse.ok) {
+          const subData = await subResponse.json();
+          setDebugInfo(prev => prev + `✅ Subscription check successful: ${JSON.stringify(subData)}\\n`);
+        } else {
+          const errorText = await subResponse.text();
+          setDebugInfo(prev => prev + `❌ Subscription check failed: ${errorText}\\n`);
+        }
+      } else {
+        const errorText = await healthResponse.text();
+        setDebugInfo(prev => prev + `❌ Health check failed: ${errorText}\\n`);
+      }
+      
+    } catch (error) {
+      setDebugInfo(prev => prev + `❌ Connectivity test failed: ${error instanceof Error ? error.message : String(error)}\\n`);
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -550,6 +592,12 @@ export const PremiumFeatures: React.FC = () => {
           className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
         >
           Set Known Customer ID
+        </button>
+        <button 
+          onClick={testBasicConnectivity}
+          className="bg-blue-500 text-white px-3 py-1 rounded text-sm mb-2"
+        >
+          Test Basic Connectivity
         </button>
         {debugInfo && (
           <pre className="text-xs bg-white p-2 rounded border overflow-auto max-h-40">
