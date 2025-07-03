@@ -36,12 +36,15 @@ const allowedOrigins = [
   'https://localhost:3000',
   'https://fitness-tracker-frontend.vercel.app',
   'https://fitness-tracker-frontend-git-main.vercel.app',
-  'https://fitness-tracker-frontend-git-develop.vercel.app'
+  'https://fitness-tracker-frontend-git-develop.vercel.app',
+  'https://fitness-tracker-test-lake.vercel.app'  // Add the specific Vercel domain
 ];
 
 // Add the CLIENT_URL if it's set
 if (process.env.CLIENT_URL) {
-  allowedOrigins.push(process.env.CLIENT_URL);
+  // Normalize CLIENT_URL by removing trailing slash
+  const normalizedClientUrl = process.env.CLIENT_URL.replace(/\/$/, '');
+  allowedOrigins.push(normalizedClientUrl);
 }
 
 app.use(cors({
@@ -49,18 +52,21 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    // Normalize the origin by removing trailing slash
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
     // Allow localhost for development
-    if (origin.includes('localhost')) {
+    if (normalizedOrigin.includes('localhost')) {
       return callback(null, true);
     }
     
-    // Allow any Vercel deployment
-    if (origin.includes('vercel.app')) {
+    // Allow any Vercel deployment (more flexible matching)
+    if (normalizedOrigin.includes('vercel.app')) {
       return callback(null, true);
     }
     
-    // Allow specific allowed origins
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Allow specific allowed origins (check both with and without trailing slash)
+    if (allowedOrigins.indexOf(normalizedOrigin) !== -1) {
       return callback(null, true);
     }
     
