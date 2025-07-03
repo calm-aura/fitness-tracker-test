@@ -101,6 +101,21 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Debug endpoint to check CORS configuration
+app.get('/debug-cors', (req, res) => {
+  res.json({
+    clientUrl: process.env.CLIENT_URL,
+    allowedOrigins: allowedOrigins,
+    corsOriginHeader: req.headers.origin,
+    allHeaders: req.headers,
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      RENDER: process.env.RENDER,
+      PORT: process.env.PORT
+    }
+  });
+});
+
 // Create a checkout session
 app.post('/create-checkout-session', async (req, res) => {
   try {
